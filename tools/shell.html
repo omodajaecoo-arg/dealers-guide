@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Guía de marca para concesionarios O&amp;J</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Carlito:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+__CSS__
+/* Acceso */
+html,body{min-height:100%}
+.gate{min-height:100vh;background:var(--dark);color:#fff;display:flex;align-items:center;justify-content:center;padding:32px 20px}
+.gate-box{width:100%;max-width:440px;display:flex;flex-direction:column;gap:22px}
+.gate-box .glogo{width:260px;max-width:80%}
+.gate-box h1{font-size:34px;color:#fff}
+.gate-box p{color:var(--silver);font-size:17px}
+.gate form{display:flex;flex-direction:column;gap:12px}
+.gate label{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--silver);font-weight:700}
+.gate input[type=text]{font:inherit;font-size:20px;padding:12px 14px;border:1px solid #3A3F45;background:#1B1E22;color:#fff;border-radius:0;letter-spacing:.04em}
+.gate input[type=text]:focus{outline:2px solid var(--accent);outline-offset:0}
+.gate .remember{display:flex;gap:8px;align-items:center;font-size:15px;color:var(--silver);text-transform:none;letter-spacing:0;font-weight:400}
+.gate .go{font:inherit;font-size:17px;font-weight:700;background:#fff;color:var(--ink);border:0;padding:12px 16px;cursor:pointer}
+.gate .go:disabled{opacity:.6;cursor:wait}
+.gate .err{color:#FF9C8F;font-size:15px;min-height:1.3em}
+.gate .help{font-size:14px;color:var(--silver)}
+.gate .help b{color:#fff;user-select:all}
+.top .right{margin-left:auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.top .who b{color:var(--ink)}
+.top .out{font:inherit;font-size:13px;background:none;border:1px solid var(--line);padding:4px 10px;cursor:pointer;color:var(--ink)}
+.top .out:hover{border-color:var(--ink)}
+[hidden]{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <span class="glogo" id="g-logo" aria-label="OMODA | JAECOO"></span>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <h1>Guía de marca para concesionarios</h1>
+      <p>Acceso exclusivo para la red oficial OMODA &amp; JAECOO Argentina.</p>
+    </div>
+    <form id="gate-form" autocomplete="off">
+      <label for="code">Código de tu concesionario</label>
+      <input id="code" type="text" inputmode="text" autocapitalize="none" spellcheck="false" placeholder="concesionario-xxxxxxxx">
+      <label class="remember" for="remember"><input id="remember" type="checkbox" checked> Recordar en este dispositivo</label>
+      <button class="go" id="go" type="submit">Entrar</button>
+      <span class="err" id="err" aria-live="polite"></span>
+    </form>
+    <p class="help">¿No tenés tu código? Pedilo a <b>marketingar@omodaglobal.com</b></p>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <div class="draft"><b>Versión 1</b><span>Lo marcado como “A confirmar” puede cambiar en las próximas versiones.</span></div>
+  <header class="top">
+    <span class="logo" id="top-logo" aria-label="OMODA | JAECOO"></span>
+    <div class="right">
+      <span>Guía de marca para concesionarios · Argentina</span>
+      <span class="who" id="who"></span>
+      <button class="out" type="button" id="logout">Salir</button>
+    </div>
+  </header>
+  <div id="content"></div>
+</div>
+
+<script>
+const MAIL = "marketingar@omodaglobal.com";
+const OJ_LOGO = __OJLOGO__;
+const ENTRIES = __ENTRIES__;
+const PAYLOAD = __PAYLOAD__;
+const ITER = __ITER__;
+const STORE_KEY = "oj-guia-codigo";
+let LOGOS = {};
+
+document.getElementById('g-logo').innerHTML = OJ_LOGO.replace(/#000000/g,'#FFFFFF');
+document.getElementById('top-logo').innerHTML = OJ_LOGO;
+
+const b64 = s => Uint8Array.from(atob(s), ch => ch.charCodeAt(0));
+const norm = c => (c||'').trim().toLowerCase().replace(/\s+/g,'');
+const CODE_RE = /^([a-z0-9]+)-([a-z0-9]{6,})$/;
+
+async function tryUnlock(raw){
+  const code = norm(raw);
+  const m = code.match(CODE_RE);
+  if(!m || !ENTRIES[m[1]]) return null;
+  if(!(window.crypto && crypto.subtle)) throw new Error('nocrypto');
+  const e = ENTRIES[m[1]];
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const base = await crypto.subtle.importKey('raw', enc.encode(code), 'PBKDF2', false, ['deriveKey']);
+  const kek = await crypto.subtle.deriveKey({name:'PBKDF2', salt:b64(e.s), iterations:ITER, hash:'SHA-256'}, base, {name:'AES-GCM', length:256}, false, ['decrypt']);
+  let inner;
+  try{ inner = JSON.parse(dec.decode(await crypto.subtle.decrypt({name:'AES-GCM', iv:b64(e.i)}, kek, b64(e.c)))); }
+  catch(err){ return null; }
+  const key = await crypto.subtle.importKey('raw', b64(inner.k), 'AES-GCM', false, ['decrypt']);
+  const data = JSON.parse(dec.decode(await crypto.subtle.decrypt({name:'AES-GCM', iv:b64(PAYLOAD.i)}, key, b64(PAYLOAD.c))));
+  return {name: inner.n, data, code};
+}
+
+function store(code){ try{ localStorage.setItem(STORE_KEY, code); }catch(e){} }
+function stored(){ try{ return localStorage.getItem(STORE_KEY); }catch(e){ return null; } }
+function forget(){ try{ localStorage.removeItem(STORE_KEY); }catch(e){} }
+
+function openGuide(res, jumpTo){
+  LOGOS = res.data.logos;
+  document.getElementById('content').innerHTML = res.data.html;
+  document.getElementById('who').innerHTML = 'Acceso: <b></b>';
+  document.querySelector('#who b').textContent = res.name;
+  document.getElementById('gate').hidden = true;
+  document.getElementById('app').hidden = false;
+  initGuide();
+  if(jumpTo){ const t=document.getElementById(jumpTo); if(t) t.scrollIntoView(); }
+}
+
+(async function start(){
+  const h = location.hash.slice(1);
+  const hashIsCode = CODE_RE.test(norm(h)) && ENTRIES[norm(h).split('-')[0]];
+  const candidates = [];
+  if(hashIsCode) candidates.push(h);
+  const s = stored(); if(s) candidates.push(s);
+  for(const c of candidates){
+    try{
+      const res = await tryUnlock(c);
+      if(res){
+        if(hashIsCode){ store(res.code); try{ history.replaceState(null,'','#inicio'); }catch(e){} }
+        openGuide(res, hashIsCode ? null : (h || null));
+        return;
+      }
+    }catch(e){}
+  }
+  if(s) forget();
+  document.getElementById('code').focus();
+})();
+
+document.getElementById('gate-form').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const btn=document.getElementById('go'), err=document.getElementById('err');
+  const val=document.getElementById('code').value;
+  err.textContent=''; btn.disabled=true; btn.textContent='Verificando…';
+  try{
+    const res = await tryUnlock(val);
+    if(res){
+      if(document.getElementById('remember').checked) store(res.code);
+      openGuide(res, null);
+    }else{
+      err.textContent = 'Ese código no es válido. Revisalo o escribinos a ' + MAIL + '.';
+    }
+  }catch(e){
+    err.textContent = 'Este navegador no permite abrir la guía. Probá con Chrome, Safari o Edge actualizados.';
+  }
+  btn.disabled=false; btn.textContent='Entrar';
+});
+
+document.getElementById('logout').addEventListener('click', ()=>{
+  forget();
+  try{ history.replaceState(null,'','#'); }catch(e){}
+  location.reload();
+});
+
+__GUIDEJS__
+</script>
+</body>
+</html>

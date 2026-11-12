@@ -154,6 +154,20 @@ document.getElementById('gate-form').addEventListener('submit', async (ev)=>{
   btn.disabled=false; btn.textContent='Entrar';
 });
 
+/* Link con código abierto sobre una pestaña donde la guía ya estaba cargada */
+window.addEventListener('hashchange', async ()=>{
+  const h = norm(location.hash.slice(1));
+  const m = h.match(CODE_RE);
+  if(!m || !ENTRIES[m[1]]) return;
+  let res = null;
+  try{ res = await tryUnlock(h); }catch(e){ return; }
+  if(!res) return;
+  store(res.code);
+  try{ history.replaceState(null,'','#inicio'); }catch(e){}
+  if(!document.getElementById('app').hidden){ location.reload(); return; }
+  openGuide(res, null);
+});
+
 document.getElementById('logout').addEventListener('click', ()=>{
   forget();
   try{ history.replaceState(null,'','#'); }catch(e){}

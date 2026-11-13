@@ -10,10 +10,9 @@ document.getElementById('clear-logo').innerHTML = LOGOS['omoda'];
 
 /* Tarjetas de logos */
 const LOGO_LIST = [
-  {key:'oj-horizontal', name:'OMODA | JAECOO horizontal', desc:'Versión principal de la red.'},
-  {key:'oj-apilado', name:'OMODA | JAECOO apilado', desc:'Para espacios angostos o altos.', tall:true},
-  {key:'omoda', name:'OMODA', desc:'Para piezas de modelos Omoda.'},
-  {key:'jaecoo', name:'JAECOO', desc:'Para piezas de modelos JAECOO.'}
+  {key:'oj-horizontal', name:'OMODA | JAECOO', desc:'El logo de todas las comunicaciones.'},
+  {key:'omoda', name:'OMODA', desc:'Solo cuando marketing lo indique.'},
+  {key:'jaecoo', name:'JAECOO', desc:'Solo cuando marketing lo indique.'}
 ];
 const grid = document.getElementById('logo-grid');
 LOGO_LIST.forEach(l=>{

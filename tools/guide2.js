@@ -123,18 +123,18 @@ document.addEventListener('click', async (ev)=>{
   }
 });
 
-/* Pedido de aprobación */
+/* Consulta sobre una pieza */
 const $ = id=>document.getElementById(id);
 (function(){ const d=new Date(); d.setDate(d.getDate()+7); $('f-fecha').value = d.toISOString().slice(0,10); })();
 function fmtDate(v){ if(!v) return 'a definir'; const [y,m,d]=v.split('-'); return `${d}/${m}/${y}`; }
 function build(){
   const dealer=$('f-dealer').value.trim()||'Concesionario', tipo=$('f-tipo').value, canal=$('f-canal').value.trim()||'a definir';
-  const fecha=fmtDate($('f-fecha').value), precio=$('f-precio').value, pauta=$('f-pauta').value.trim(), com=$('f-com').value.trim();
-  const subj = `[Aprobación] ${dealer} · ${tipo} · ${fecha}`;
+  const fecha=fmtDate($('f-fecha').value), precio=$('f-precio').value, com=$('f-com').value.trim();
+  const subj = `[Consulta] ${dealer} · ${tipo} · ${fecha}`;
   const lines = [
     'Hola, equipo de marketing:',
     '',
-    'Les envío para aprobar la siguiente pieza.',
+    'Les envío una pieza para consultarles antes de publicarla.',
     '',
     `Concesionario: ${dealer}`,
     `Tipo de pieza: ${tipo}`,
@@ -142,9 +142,8 @@ function build(){
     `Fecha de publicación: ${fecha}`,
     `Incluye precio, cuotas o promoción: ${precio}`
   ];
-  if(pauta) lines.push(`Pauta paga (presupuesto y zona): ${pauta}`);
-  if(com) lines.push(`Comentarios: ${com}`);
-  lines.push('', 'Adjunto la pieza final.', '', 'Gracias.');
+  if(com) lines.push(`Consulta: ${com}`);
+  lines.push('', 'Adjunto la pieza.', '', 'Gracias.');
   const body = lines.join('\n');
   $('o-subj').textContent = subj; $('o-body').textContent = body;
   $('b-mail').href = `mailto:${MAIL}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
